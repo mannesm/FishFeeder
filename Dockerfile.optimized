@@ -1,58 +1,37 @@
-# Multi-stage Dockerfile using uv for faster builds and smaller images
-# This is an optimized version - rename to Dockerfile to use
+# syntax=docker/dockerfile:1
+# Multi-stage build using uv for fast, minimal Python images
 
-# Stage 1: Build stage
+# Stage 1: Builder
 FROM python:3.11-slim AS builder
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    python3-dev \
-    curl \
+RUN apt-get update && apt-get install -y gcc python3-dev curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv
+# Copy uv from its image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Set environment variables
 ENV UV_SYSTEM_PYTHON=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy
 
 WORKDIR /app
-
-# Copy dependency files
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies
+# Install dependencies into a .venv
 RUN uv sync --frozen --no-dev
 
-# Stage 2: Runtime stage
+# Stage 2: Runtime
 FROM python:3.11-slim
 
-# Install only runtime dependencies (pigpio)
-RUN apt-get update && apt-get install -y \
-    pigpio \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update  && rm -rf /var/lib/apt/lists/*
 
-# Copy uv from builder
+# Copy uv and virtual environment
 COPY --from=builder /usr/local/bin/uv /usr/local/bin/uv
-
-# Set environment variables
-ENV UV_SYSTEM_PYTHON=1
-
-WORKDIR /app
-
-# Copy installed dependencies from builder
 COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/pyproject.toml /app/uv.lock ./
 
-# Copy application code
+WORKDIR /app
 COPY app/ ./app/
 
-# Expose the FastAPI port
 EXPOSE 8000
-
-# Run the FastAPI app
 CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-

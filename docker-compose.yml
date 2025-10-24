@@ -13,16 +13,19 @@ services:
     privileged: true
     restart: unless-stopped
     environment:
-      - APP_NAME=Fish Feeder Servo Controller
-      - APP_VERSION=1.0.0
-      - SERVO_PIN=17
-      - PWM_FREQUENCY=50
+      APP_NAME: "Fish Feeder Servo Controller"
+      APP_VERSION: "1.0.0"
+      SERVO_PIN: 17
+      PWM_FREQUENCY: 50
+      GPIOZERO_PIN_FACTORY: pigpio
+      PIGPIO_ADDR: host.docker.internal
+      PIGPIO_PORT: 8888
     volumes:
       - ./app:/app/app
     networks:
       - fishfeeder-network
-
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 networks:
   fishfeeder-network:
     driver: bridge
-

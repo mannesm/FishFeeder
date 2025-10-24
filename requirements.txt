@@ -4,4 +4,3 @@ pydantic==2.5.0
 pydantic-settings==2.1.0
 gpiozero==2.0.1
 pigpio==1.78
-
