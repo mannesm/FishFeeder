@@ -1,33 +1,37 @@
-FROM python:3.11-slim
+# syntax=docker/dockerfile:1
+# Multi-stage build using uv for fast, minimal Python images
 
-# Install system dependencies for gpiozero and pigpio
-RUN apt-get update && apt-get install -y \
-    gcc \
-    python3-dev \
-    pigpio \
-    curl \
+# Stage 1: Builder
+FROM python:3.11-slim AS builder
+
+RUN apt-get update && apt-get install -y gcc python3-dev curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv
+# Copy uv from its image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Set environment variables for uv
-ENV UV_SYSTEM_PYTHON=1
+ENV UV_SYSTEM_PYTHON=1 \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
 
 WORKDIR /app
-
-# Copy dependency files for better caching
 COPY pyproject.toml uv.lock ./
 
-# Sync dependencies using uv
+# Install dependencies into a .venv
 RUN uv sync --frozen --no-dev
 
-# Copy application code
+# Stage 2: Runtime
+FROM python:3.11-slim
+
+# no apt-get needed here
+
+# Copy uv and virtual environment
+COPY --from=builder /usr/local/bin/uv /usr/local/bin/uv
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app/pyproject.toml /app/uv.lock ./
+
+WORKDIR /app
 COPY app/ ./app/
 
-# Expose the FastAPI port
 EXPOSE 8000
-
-# Run the FastAPI app with uvicorn using uv run
 CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
