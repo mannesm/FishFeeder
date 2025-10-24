@@ -6,7 +6,6 @@ This script demonstrates how to interact with the API programmatically.
 import requests
 from time import sleep
 
-# Base URL of the API (adjust if running remotely)
 BASE_URL = "http://localhost:8000"
 
 
