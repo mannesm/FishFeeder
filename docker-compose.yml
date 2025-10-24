@@ -4,7 +4,7 @@ services:
   fishfeeder:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.optimized
     container_name: fishfeeder-api
     ports:
       - "8000:8000"
