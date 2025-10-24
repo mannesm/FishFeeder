@@ -1,9 +1,10 @@
 FROM python:3.11-slim
 
-# Install system dependencies for RPi.GPIO
+# Install system dependencies for gpiozero and pigpio
 RUN apt-get update && apt-get install -y \
     gcc \
     python3-dev \
+    pigpio \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

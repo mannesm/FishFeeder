@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-import RPi.GPIO as GPIO
+from gpiozero import Servo
+from gpiozero.pins.pigpio import PiGPIOFactory
 import time
 import threading
 from contextlib import asynccontextmanager
@@ -12,16 +13,29 @@ servo_controller = None
 class ServoController:
     def __init__(self, servo_pin=17):
         self.servo_pin = servo_pin
-        self.pwm = None
+        self.servo = None
         self.lock = threading.Lock()
         self.initialize()
 
     def initialize(self):
-        """Initialize GPIO and PWM"""
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(self.servo_pin, GPIO.OUT)
-        self.pwm = GPIO.PWM(self.servo_pin, 50)  # 50Hz PWM
-        self.pwm.start(0)
+        """Initialize servo using gpiozero"""
+        # Use PiGPIOFactory for better PWM control (falls back to default if pigpio not available)
+        try:
+            factory = PiGPIOFactory()
+        except:
+            factory = None  # Use default pin factory
+
+        # Initialize servo with min/max pulse widths for standard hobby servos
+        self.servo = Servo(
+            self.servo_pin,
+            min_pulse_width=0.5/1000,  # 0.5ms = 0°
+            max_pulse_width=2.5/1000,   # 2.5ms = 180°
+            pin_factory=factory
+        )
+
+    def _angle_to_value(self, angle: float) -> float:
+        """Convert angle (0-180) to gpiozero value (-1 to 1)"""
+        return (angle - 90.0) / 90.0
 
     def set_angle(self, angle: float, speed: float = 0.5):
         """
@@ -29,11 +43,9 @@ class ServoController:
         Speed parameter controls delay between movements (higher = slower)
         """
         with self.lock:
-            # Convert angle to duty cycle (2.5% = 0°, 12.5% = 180°)
-            duty_cycle = 2.5 + (angle / 180.0) * 10.0
-            self.pwm.ChangeDutyCycle(duty_cycle)
+            value = self._angle_to_value(angle)
+            self.servo.value = value
             time.sleep(speed)
-            self.pwm.ChangeDutyCycle(0)  # Stop signal to prevent jitter
 
     def rotate_degrees(self, degrees: float, speed: float = 0.5):
         """
@@ -47,11 +59,11 @@ class ServoController:
 
             for _ in range(steps):
                 angle = 90 + (direction * 45)  # 135° or 45° for direction
-                duty_cycle = 2.5 + (angle / 180.0) * 10.0
-                self.pwm.ChangeDutyCycle(duty_cycle)
+                value = self._angle_to_value(angle)
+                self.servo.value = value
                 time.sleep(speed)
 
-            self.pwm.ChangeDutyCycle(0)
+            self.servo.value = 0  # Return to neutral
 
     def spin_compartments(self, compartments: int, speed: float = 0.5):
         """
@@ -63,16 +75,18 @@ class ServoController:
 
             for i in range(compartments):
                 position = initial_position + (increment * i)
-                self.pwm.ChangeDutyCycle(position)
+                # Convert duty cycle percentage to angle approximation
+                angle = min(180, max(0, (position / 12.5) * 180.0))
+                value = self._angle_to_value(angle)
+                self.servo.value = value
                 time.sleep(speed)
-                self.pwm.ChangeDutyCycle(0)
+                self.servo.value = None  # Detach to reduce jitter
                 time.sleep(0.2)
 
     def cleanup(self):
         """Clean up GPIO"""
-        if self.pwm:
-            self.pwm.stop()
-        GPIO.cleanup()
+        if self.servo:
+            self.servo.close()
 
 
 @asynccontextmanager
