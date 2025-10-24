@@ -1,4 +1,5 @@
 """Servo controller hardware interface"""
+
 import time
 import threading
 from typing import Optional
@@ -136,4 +137,3 @@ class ServoController:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit"""
         self.cleanup()
-

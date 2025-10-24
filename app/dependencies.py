@@ -1,4 +1,5 @@
 """Dependency injection for the application"""
+
 from typing import Optional
 from app.servo import ServoController
 
@@ -30,4 +31,3 @@ def set_servo_controller(controller: ServoController) -> None:
     """
     global _servo_controller
     _servo_controller = controller
-

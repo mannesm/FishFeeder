@@ -1,4 +1,5 @@
 """FastAPI application factory and lifecycle management"""
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -41,7 +42,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
         docs_url="/docs",
         redoc_url="/redoc",
-        openapi_url="/openapi.json"
+        openapi_url="/openapi.json",
     )
 
     # Add CORS middleware (adjust origins as needed)
@@ -61,4 +62,3 @@ def create_app() -> FastAPI:
 
 # Create the application instance
 app = create_app()
-
