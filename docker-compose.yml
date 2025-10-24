@@ -8,9 +8,6 @@ services:
     container_name: fishfeeder-api
     ports:
       - "8000:8000"
-    devices:
-      - /dev/gpiomem:/dev/gpiomem
-    privileged: true
     restart: unless-stopped
     environment:
       APP_NAME: "Fish Feeder Servo Controller"
@@ -26,6 +23,13 @@ services:
       - fishfeeder-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    # optional: quick connectivity check to pigpio
+    healthcheck:
+      test: ["CMD", "sh", "-c", "timeout 2 bash -c '</dev/tcp/host.docker.internal/8888' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+
 networks:
   fishfeeder-network:
     driver: bridge
