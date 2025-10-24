@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  fishfeeder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fishfeeder-api
+    ports:
+      - "8000:8000"
+    devices:
+      - /dev/gpiomem:/dev/gpiomem
+    privileged: true
+    restart: unless-stopped
+    environment:
+      - APP_NAME=Fish Feeder Servo Controller
+      - APP_VERSION=1.0.0
+      - SERVO_PIN=17
+      - PWM_FREQUENCY=50
+    volumes:
+      - ./app:/app/app
+    networks:
+      - fishfeeder-network
+
+networks:
+  fishfeeder-network:
+    driver: bridge
+

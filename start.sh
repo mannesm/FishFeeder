@@ -14,7 +14,7 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-# Check if docker-compose is installed
+# Check if docker compose is installed
 if ! command -v docker compose &> /dev/null; then
     echo "❌ Docker Compose is not installed. Please install Docker Compose first."
     exit 1
@@ -31,7 +31,7 @@ fi
 
 echo ""
 echo "🚀 Building and starting the container..."
-docker-compose up -d --build
+docker compose up -d --build
 
 echo ""
 echo "⏳ Waiting for the API to start..."
@@ -46,9 +46,9 @@ echo "   - Health Check: http://localhost:8000/health"
 echo "   - Root: http://localhost:8000/"
 echo ""
 echo "📊 View logs:"
-echo "   docker-compose logs -f"
+echo "   docker compose logs -f"
 echo ""
 echo "🛑 Stop the service:"
-echo "   docker-compose down"
+echo "   docker compose down"
 echo ""
 
